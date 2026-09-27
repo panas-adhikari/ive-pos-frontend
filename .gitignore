@@ -28,3 +28,9 @@ blob-report/
 *.njsproj
 *.sln
 *.sw?
+
+!**/.env.*.example
+backupcodes.txt
+*.dump
+*.dump.*
+backups/

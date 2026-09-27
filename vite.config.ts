@@ -4,7 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import http from 'node:http'
 import { fileURLToPath } from 'node:url'
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 
 const projectRoot = fileURLToPath(new URL('..', import.meta.url))
 const envFile = fileURLToPath(new URL('../backend/.env', import.meta.url))
@@ -63,6 +63,18 @@ function apiProxy(): Plugin {
   }
 }
 
-export default defineConfig({
-  plugins: [react(), tailwindcss(), apiProxy()],
+export default defineConfig(({ mode, command }) => {
+  const env = loadEnv(mode, process.cwd(), 'VITE_')
+  const api = env.VITE_API_URL
+  if (api) {
+    const parsed = new URL(api)
+    if (parsed.origin !== api || parsed.username || parsed.password
+      || !['http:', 'https:'].includes(parsed.protocol)) {
+      throw new Error('VITE_API_URL must be an exact HTTP(S) origin without a trailing slash')
+    }
+    if (command === 'build' && parsed.protocol !== 'https:') {
+      throw new Error('Hosted builds require an HTTPS API origin')
+    }
+  }
+  return { base: '/', plugins: [react(), tailwindcss(), apiProxy()] }
 })

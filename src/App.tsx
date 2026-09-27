@@ -12,12 +12,13 @@ import { identity } from './session'
 import { useAccountActions } from './auth'
 import { SecurityPanel } from './identity'
 import AccountProfile from './AccountProfile'
+import { apiUrl } from './api-url'
 
 type Workspace = 'platform' | 'organization' | 'store'
 type OrganizationSection = 'terminal' | 'report' | 'operations' | 'stores' | 'people' | 'settings'
 
 async function checkReadiness(): Promise<boolean> {
-  const response = await fetch('/api/v1/ready', { signal: AbortSignal.timeout(6000) })
+  const response = await fetch(apiUrl('/api/v1/ready'), { signal: AbortSignal.timeout(6000) })
   if (!response.ok) throw new Error('Service unavailable')
   const data: unknown = await response.json()
   if (!data || typeof data !== 'object' || !('status' in data) || data.status !== 'ready') throw new Error('Unexpected service response')

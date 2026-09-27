@@ -1,13 +1,15 @@
 import { queryClient } from './api-cache'
 import { identity } from './session'
+import { apiUrl } from './api-url'
 
 type RequestBody = object | undefined
 
 function requestOptions(method: string, body: RequestBody): RequestInit {
-  const payload = body === undefined ? undefined : JSON.stringify(body)
+  const writes = !['GET', 'HEAD', 'OPTIONS'].includes(method.toUpperCase())
+  const payload = writes ? JSON.stringify(body ?? {}) : undefined
   return {
     method,
-    credentials: 'same-origin',
+    credentials: 'include',
     cache: 'no-store',
     signal: AbortSignal.timeout(15_000),
     headers: payload ? { 'Content-Type': 'application/json', 'X-POS-CSRF': '1' } : {},
@@ -17,7 +19,7 @@ function requestOptions(method: string, body: RequestBody): RequestInit {
 
 export async function authenticatedRequest(url: string, method = 'GET', body?: object) {
   const options = requestOptions(method, body)
-  let response = await fetch(url, options)
+  let response = await fetch(apiUrl(url), options)
   if (response.status !== 401) return response
 
   // The access cookie may have expired while cached API data was still fresh. Refresh the
@@ -30,6 +32,6 @@ export async function authenticatedRequest(url: string, method = 'GET', body?: o
     queryClient.setQueryData(['identity'], null)
     return response
   }
-  response = await fetch(url, requestOptions(method, body))
+  response = await fetch(apiUrl(url), requestOptions(method, body))
   return response
 }

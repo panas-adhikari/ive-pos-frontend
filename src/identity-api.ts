@@ -1,6 +1,8 @@
+import { apiUrl } from './api-url'
+
 export async function authRequest(path: string, body?: object) {
-  return fetch(`/api/v1/auth/${path}`, {
-    method: body === undefined ? 'GET' : 'POST', credentials: 'same-origin', cache: 'no-store',
+  return fetch(apiUrl(`/api/v1/auth/${path}`), {
+    method: body === undefined ? 'GET' : 'POST', credentials: 'include', cache: 'no-store',
     headers: body === undefined ? {} : { 'Content-Type': 'application/json', 'X-POS-CSRF': '1' },
     body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(15_000),
   })
