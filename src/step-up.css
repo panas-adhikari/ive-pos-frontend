@@ -1,0 +1,10 @@
+.step-up-backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgb(15 23 42 / 42%); }
+.step-up-popover { width: min(100%, 440px); padding: 24px; border: 1px solid #dce3dc; border-radius: 12px; background: #fff; box-shadow: 0 24px 70px rgb(15 23 42 / 24%); }
+.step-up-popover h2 { margin: 0; font-size: 20px; }
+.step-up-popover > p { margin: 8px 0 18px; color: #64726a; font-size: 14px; line-height: 1.5; }
+.step-up-popover form { display: grid; gap: 14px; }
+.step-up-popover label { display: grid; gap: 6px; font-size: 13px; font-weight: 600; }
+.step-up-popover input { width: 100%; padding: 10px 12px; border: 1px solid #b9c7bc; border-radius: 6px; font: inherit; }
+.step-up-popover [role="alert"] { margin: 0; color: #a13f28; font-size: 13px; }
+.step-up-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 4px; }
+.step-up-actions button { margin: 0; }

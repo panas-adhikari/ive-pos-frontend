@@ -1,0 +1,43 @@
+import { expect, test } from '@playwright/test'
+
+test('login, reload, two-tab refresh, password change, and logout', async ({ page, context }) => {
+  const failures: string[] = []
+  page.on('pageerror', error => failures.push(error.message))
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: 'Welcome back.' })).toBeVisible()
+  await page.getByLabel('Email address').fill('browser@example.com')
+  await page.getByLabel('Password', { exact: true }).fill('wrong password')
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await expect(page.getByRole('alert')).toContainText('Invalid email or password')
+  await page.getByLabel('Password', { exact: true }).fill('browser testing passphrase only')
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
+  await page.reload()
+  await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
+  expect(await page.evaluate(() => ({ ...localStorage }))).toEqual({})
+  expect(await page.evaluate(() => document.cookie)).not.toContain('pos_dev_')
+
+  // Delete only the short-lived access cookie; both tabs must recover via one rotation.
+  await context.clearCookies({ name: 'pos_dev_access' })
+  const second = await context.newPage()
+  await Promise.all([page.reload(), second.goto('/')])
+  await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
+  await expect(second.getByRole('button', { name: 'Sign out' })).toBeVisible()
+
+  await page.getByRole('button', { name: 'Change password' }).click()
+  await page.getByLabel('Current password').fill('browser testing passphrase only')
+  await page.getByLabel('New password', { exact: true }).fill('browser updated passphrase only')
+  await page.getByLabel('Confirm new password').fill('browser updated passphrase only')
+  await page.getByRole('button', { name: 'Update password and sign out' }).click()
+  await expect(page.getByRole('heading', { name: 'Welcome back.' })).toBeVisible()
+  await second.reload()
+  await expect(second.getByRole('heading', { name: 'Welcome back.' })).toBeVisible()
+  await page.getByLabel('Email address').fill('browser@example.com')
+  await page.getByLabel('Password', { exact: true }).fill('browser updated passphrase only')
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+  await page.getByRole('button', { name: 'Sign out' }).click()
+  await expect(page.getByRole('heading', { name: 'Welcome back.' })).toBeVisible()
+  await page.setViewportSize({ width: 375, height: 812 })
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375)
+  expect(failures).toEqual([])
+})
