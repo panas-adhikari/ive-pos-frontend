@@ -30,7 +30,7 @@ const names: Record<string, string> = {
 export default function Employees() {
   const account = useQuery({ queryKey: ['identity'], queryFn: identity, retry: false })
   const [organizationId, setOrganizationId] = useState('')
-  const memberships = account.data?.memberships.filter(member => member.permissions.includes('employees.manage')) || []
+  const memberships = account.data?.memberships.filter(member => member.permissions.includes('employees.manage') || (member.permissions.includes('store.read') && member.roles.some(role => ['store_manager', 'store_admin'].includes(role)))) || []
   const selected = memberships.find(member => member.organization_id === organizationId) || memberships[0]
   if (!account.data) return <p role="status">Loading people…</p>
   if (!selected) return <section className="panel"><p>You do not have access to manage staff for this organization.</p></section>
@@ -41,8 +41,37 @@ export default function Employees() {
       </select></label>}
     </div>
     <OrganizationStepUpProvider key={selected.organization_id}>
-      <DirectoryView organizationId={selected.organization_id} account={account.data} />
+      {selected.permissions.includes('employees.manage') ? <DirectoryView organizationId={selected.organization_id} account={account.data} /> : <ManagerAssignments organizationId={selected.organization_id} />}
     </OrganizationStepUpProvider>
+  </section>
+}
+
+type AssignmentDirectory = { stores: { id: string; name: string }[]; memberships: { id: string; email: string; version: number; store_ids: string[] }[] }
+
+function ManagerAssignments({ organizationId }: { organizationId: string }) {
+  const cache = useQueryClient()
+  const query = useQuery<AssignmentDirectory>({ queryKey: ['staff-assignments', organizationId], queryFn: () => setupRequest(`${organizationId}/staff-assignments`), retry: false })
+  const [drafts, setDrafts] = useState<Record<string, string[]>>({})
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+  const [message, setMessage] = useState('')
+  async function save(member: AssignmentDirectory['memberships'][number]) {
+    setBusy(true); setError(''); setMessage('')
+    try {
+      await setupRequest(`${organizationId}/staff-assignments/${member.id}`, 'PUT', { store_ids: drafts[member.id] ?? member.store_ids, expected_version: member.version })
+      await query.refetch()
+      setDrafts({})
+      await cache.invalidateQueries({ queryKey: ['operations-context'] })
+      setMessage(`Store assignments saved for ${member.email}.`)
+    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to save assignments.') }
+    finally { setBusy(false) }
+  }
+  return <section className="panel staff-directory"><h3>Staff store assignments</h3><p className="muted">Choose one or more stores you manage for each person. Assignments at other stores are preserved.</p>
+    {query.isPending && <p role="status">Loading staff…</p>}
+    {(query.isError || error) && <p role="alert">{error || query.error?.message}</p>}
+    {message && <p role="status">{message}</p>}
+    {query.data?.memberships.map(member => { const selected = drafts[member.id] ?? member.store_ids; return <form className="access-section" key={member.id} onSubmit={event => { event.preventDefault(); void save(member) }}><fieldset disabled={busy}><legend>{member.email}</legend><div className="access-store-list">{query.data.stores.map(store => <label className="access-check" key={store.id}><input type="checkbox" checked={selected.includes(store.id)} onChange={event => setDrafts(current => ({ ...current, [member.id]: event.target.checked ? [...selected, store.id] : selected.filter(id => id !== store.id) }))} />{store.name}</label>)}</div><button className="primary-button" disabled={!selected.length || busy}>Save assignments</button></fieldset></form> })}
+    {query.data && !query.data.memberships.length && <p>No staff assignments are available to manage. An organization administrator can assign staff to your stores.</p>}
   </section>
 }
 
@@ -124,7 +153,7 @@ function AccessForm({ member, data, disabled, error, save, close }: {
     ).map(permission => [permission, member.permissions.includes(permission)]))
   })
   const [allStores, setAllStores] = useState(member?.all_stores ?? initialRoles.some(role => data.role_all_stores.includes(role)))
-  const [stores, setStores] = useState(member?.store_ids || [])
+  const [stores, setStores] = useState(member?.store_ids || (data.stores.filter(store => store.active).length === 1 ? data.stores.filter(store => store.active).map(store => store.id) : []))
   const [active, setActive] = useState(member?.active ?? true)
   function toggle(values: string[], value: string) { return values.includes(value) ? values.filter(item => item !== value) : [...values, value] }
   function permissionsFor(selectedRoles: string[]) {
@@ -134,13 +163,14 @@ function AccessForm({ member, data, disabled, error, save, close }: {
   const rolePermissions = new Set(roles.flatMap(role => data.roles[role] || []))
   const permissions = permissionsFor(roles)
   const organizationWide = permissions.includes('employees.manage') || permissions.includes('organization.setup')
+  const needsStore = active && !allStores && !organizationWide && permissions.some(permission => ['store.read', 'inventory.manage', 'sales.create', 'reports.read'].includes(permission)) && !stores.length
   function changeRole(role: string) {
     const selected = toggle(roles, role)
     const next = selected.length ? selected : ['custom']
     setRoles(next)
     const nextPermissions = permissionsFor(next)
-    setAllStores(next.some(value => data.role_all_stores.includes(value)) ||
-      nextPermissions.includes('employees.manage') || nextPermissions.includes('organization.setup'))
+    if (nextPermissions.includes('employees.manage') || nextPermissions.includes('organization.setup')) setAllStores(true)
+    else if (organizationWide) setAllStores(false)
   }
   function changePermission(permission: string) {
     const enabled = !permissions.includes(permission)
@@ -154,6 +184,7 @@ function AccessForm({ member, data, disabled, error, save, close }: {
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (needsStore) return
     if (member?.active && !active && !window.confirm(`Suspend ${member.email} in this organization?`)) return
     const values = new FormData(event.currentTarget)
     await save({ roles, permissions, all_stores: allStores || organizationWide, store_ids: allStores || organizationWide ? [] : stores, active,
@@ -172,11 +203,12 @@ function AccessForm({ member, data, disabled, error, save, close }: {
           <label className="access-check"><input type="checkbox" checked={allStores || organizationWide} disabled={organizationWide} onChange={event => setAllStores(event.target.checked)} />All stores, including future stores</label>
           {roles.some(role => data.role_all_stores.includes(role)) && <p className="access-help">Selected by the role. You can change this store access for this person.</p>}
           {!allStores && !organizationWide && <div className="access-store-list">{data.stores.map(store => <label className="access-check" key={store.id}><input type="checkbox" checked={stores.includes(store.id)} onChange={() => setStores(toggle(stores, store.id))} />{store.name}{store.active ? '' : ' (inactive)'}</label>)}{!data.stores.length && <p className="access-help">No stores have been added yet.</p>}</div>}
-          {!allStores && !organizationWide && !stores.length && !!data.stores.length && <p className="access-help">No stores selected. This person cannot view a store until one is assigned.</p>}
+          {!allStores && !organizationWide && <p className="access-help">Select one or more stores. Staff can only open their assigned locations.</p>}
+          {needsStore && <p className="access-error" role="status">Select at least one store before saving active staff access.</p>}
         </div>
         {member && <div className="access-section access-membership"><div><h4>Membership status</h4><p>Suspending access preserves this person’s record.</p></div><label className="access-check"><input type="checkbox" checked={active} onChange={event => setActive(event.target.checked)} />Active</label></div>}
         {error && <p role="alert" className="access-error">{error}</p>}
-        <div className="access-editor-actions"><button className="primary-button">{member ? 'Save access' : 'Send invitation'}</button><button type="button" className="secondary-button" disabled={disabled} onClick={close}>Cancel</button></div>
+        <div className="access-editor-actions"><button className="primary-button" disabled={needsStore}>{member ? 'Save access' : 'Send invitation'}</button><button type="button" className="secondary-button" disabled={disabled} onClick={close}>Cancel</button></div>
       </fieldset>
     </form>
   </section>

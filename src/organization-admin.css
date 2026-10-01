@@ -32,6 +32,13 @@
 .controller-main .store-setup .setup-security p { margin: 5px 0; }
 .controller-main .store-setup .unlock-form { margin-top: 10px; }
 .controller-sidebar { min-height: 0; height: 100%; gap: 0; overflow: hidden; }
+.sidebar-sections { display: grid; gap: 24px; }
+.sidebar-section { min-width: 0; }
+.sidebar-section .sidebar-label { margin-bottom: 8px; }
+.sidebar-section nav { gap: 4px; }
+.sidebar-section .workspace-link { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px; }
+.sidebar-section .workspace-link strong { flex: 1; margin: 0; font-size: 13px; font-weight: 650; }
+.sidebar-section .workspace-link.active { background: #e5f1e9; color: #15543c; box-shadow: inset 3px 0 #24714e; }
 .controller-sidebar nav[aria-label="Organization navigation"] { gap: 4px; }
 .controller-sidebar nav[aria-label="Organization navigation"] .workspace-link,
 .sidebar-workspace-switch .workspace-link { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 10px 12px; }
@@ -126,6 +133,11 @@
 @media (max-width: 980px) {
   .controller-layout { display: flex; flex-direction: column; }
   .controller-sidebar { height: auto; flex: 0 0 auto; align-items: center; flex-wrap: wrap; overflow: hidden; padding: 9px 16px; }
+  .sidebar-sections { display: flex; flex: 1 1 auto; gap: 10px; min-width: 0; overflow-x: auto; }
+  .sidebar-section { flex: none; }
+  .sidebar-section .sidebar-label { display: none; }
+  .sidebar-section nav { display: flex; flex-wrap: nowrap; }
+  .sidebar-section .workspace-link { width: auto; min-width: 135px; min-height: 38px; padding: 7px 9px; }
   .controller-sidebar > nav { display: flex; flex: 1 1 auto; flex-wrap: wrap; gap: 5px; min-width: 0; max-width: 100%; overflow: visible; }
   .controller-sidebar nav[aria-label="Organization navigation"] { display: flex; flex-wrap: wrap; gap: 5px; overflow: visible; }
   .controller-sidebar nav[aria-label="Organization navigation"] .workspace-link { width: auto; min-width: 0; min-height: 38px; padding: 7px 9px; }
@@ -147,11 +159,19 @@
   .compact-page-bar > .primary-button { margin-left: 0; }
   .compact-heading-actions { width: 100%; margin-left: 0; }
   .controller-sidebar { align-items: stretch; flex-wrap: nowrap; gap: 7px; padding: 8px 10px; }
+  .sidebar-sections { display: grid; grid-template-columns: 1fr; gap: 5px; width: 100%; overflow: visible; }
+  .sidebar-section { display: contents; }
+  .sidebar-section nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+  .sidebar-section .workspace-link { align-items: center; flex-direction: column; justify-content: center; gap: 3px; min-width: 0; min-height: 52px; padding: 5px 2px; text-align: center; }
+  .sidebar-section .workspace-link strong { flex: none; font-size: 9px; line-height: 1.15; }
+  .sidebar-section .workspace-link .workspace-icon svg { width: 16px; height: 16px; }
   .controller-sidebar > nav { width: 100%; flex: 0 0 auto; }
   .controller-sidebar nav[aria-label="Organization navigation"] { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); width: 100%; }
   .controller-sidebar nav[aria-label="Organization navigation"] .workspace-link { align-items: center; flex-direction: column; justify-content: center; gap: 3px; min-height: 52px; padding: 5px 2px; text-align: center; }
   .controller-sidebar nav[aria-label="Organization navigation"] .workspace-link strong { flex: none; font-size: 9px; line-height: 1.15; }
   .controller-sidebar nav[aria-label="Organization navigation"] .workspace-link .workspace-icon svg { width: 16px; height: 16px; }
+  .controller-sidebar .sidebar-section nav { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; }
+  .controller-sidebar .sidebar-section .workspace-link { min-width: 0; }
   .sidebar-coming-soon { display: none !important; }
   .sidebar-footer { display: flex; justify-content: space-between; gap: 8px; width: 100%; margin: 0; }
   .sidebar-account { min-width: 0; flex: 1; }
