@@ -12,7 +12,17 @@
 .topbar-organization .live-dot { flex: 0 0 7px; width: 7px; height: 7px; margin-left: 4px; }
 .workspace-status { gap: 7px; }
 .controller-layout { flex: 1 1 auto; min-height: 0; overflow: hidden; }
-.controller-main { min-width: 0; min-height: 0; height: 100%; padding: 20px 32px 44px; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; }
+.controller-main { min-width: 0; min-height: 0; max-width: none; height: 100%; margin: 0; padding: 0; overflow-y: auto; overscroll-behavior-y: contain; scrollbar-gutter: stable; scrollbar-width: thin; scrollbar-color: #789485 #f6f8f6; }
+.controller-main:hover, .controller-main:focus-within { scrollbar-color: #47745e #f6f8f6; }
+.controller-main::-webkit-scrollbar { width: 8px; height: 8px; }
+.controller-main::-webkit-scrollbar-track { background: #f6f8f6; }
+.controller-main::-webkit-scrollbar-thumb { background: #789485; border: 2px solid #f6f8f6; border-radius: 999px; }
+.controller-main::-webkit-scrollbar-thumb:hover { background: #47745e; }
+.controller-main::-webkit-scrollbar-button { display: none; }
+@supports selector(::-webkit-scrollbar) {
+  .controller-main, .controller-main:hover, .controller-main:focus-within { scrollbar-width: auto; scrollbar-color: auto; }
+}
+.controller-content { width: 100%; max-width: 1440px; margin: 0 auto; padding: 20px 32px 44px; }
 .compact-page-bar { display: flex; align-items: center; gap: 13px; min-height: 38px; margin-bottom: 16px; }
 .compact-page-bar h1, .compact-panel-heading h1 { margin: 0; color: #1d3528; font-size: clamp(19px, 2vw, 24px); font-weight: 720; letter-spacing: -.025em; line-height: 1.2; }
 .compact-page-bar .state { margin-left: auto; }
@@ -149,7 +159,8 @@
 }
 @media (max-width: 620px) {
   .controller-topbar { padding: 0 16px; gap: 12px; }
-  .controller-main { padding: 16px 16px 36px; }
+  .controller-main { padding: 0; }
+  .controller-content { padding: 16px 16px 36px; }
   .topbar-context { display: none; }
   .topbar-organization { margin-left: auto; }
   .topbar-organization strong { max-width: 105px; }

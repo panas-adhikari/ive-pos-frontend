@@ -4,13 +4,14 @@ import { authRequest } from './identity-api'
 import { identity } from './session'
 import './step-up.css'
 
-type Pending = { run: () => Promise<void>; resolve: (verified: boolean) => void }
+type Pending = { run: () => Promise<void>; resolve: (verified: boolean) => void; reject: (reason: unknown) => void }
 type StepUpContextValue = { runCritical: (run: () => Promise<void>) => Promise<boolean> }
 const StepUpContext = createContext<StepUpContextValue | null>(null)
 
 function CriticalStepUpProvider({ children, scope }: { children: ReactNode; scope: 'platform' | 'organization' }) {
   const [pending, setPending] = useState<Pending | null>(null)
   const [busy, setBusy] = useState(false)
+  const [repeat, setRepeat] = useState(false)
   const [error, setError] = useState('')
 
   async function runCritical(run: () => Promise<void>) {
@@ -24,7 +25,8 @@ function CriticalStepUpProvider({ children, scope }: { children: ReactNode; scop
       return true
     }
     setError('')
-    return new Promise<boolean>(resolve => setPending({ run, resolve }))
+    setRepeat(account.require_action_verification)
+    return new Promise<boolean>((resolve, reject) => setPending({ run, resolve, reject }))
   }
 
   async function verify(event: FormEvent<HTMLFormElement>) {
@@ -51,7 +53,7 @@ function CriticalStepUpProvider({ children, scope }: { children: ReactNode; scop
     if (!task) return
     setPending(null)
     try { await task.run(); task.resolve(true) }
-    catch { task.resolve(false) }
+    catch (reason) { task.reject(reason) }
   }
 
   function cancel() {
@@ -65,7 +67,7 @@ function CriticalStepUpProvider({ children, scope }: { children: ReactNode; scop
     {pending && <div className="step-up-backdrop" onMouseDown={event => { if (event.target === event.currentTarget && !busy) cancel() }}>
       <section className="step-up-popover" role="dialog" aria-modal="true" aria-labelledby="step-up-title">
         <h2 id="step-up-title">Verify to continue</h2>
-        <p>Enter your password and a fresh authenticator or backup code. Verification lasts five minutes.</p>
+        <p>Enter your password and a fresh authenticator or backup code. {repeat ? 'Verification lasts five minutes.' : 'Verification lasts until this session expires or you sign out.'}</p>
         <form onSubmit={verify}>
           <label>Password<input name="password" type="password" autoComplete="current-password" maxLength={128} required autoFocus /></label>
           <label>Authenticator or backup code<input name="code" autoComplete="one-time-code" maxLength={64} required spellCheck={false} autoCapitalize="none" /></label>

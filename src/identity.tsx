@@ -3,6 +3,9 @@ import type { FormEvent } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
 import { ArrowLeft, CheckCircle2, KeyRound, MailCheck, ShieldCheck } from 'lucide-react'
 
+import { hasVerifiedSession } from './session'
+import type { Identity } from './session'
+import SecurityPreferences from './SecurityPreferences'
 import { authRequest } from './identity-api'
 import type { EmailLink } from './identity-api'
 import { AcceptInvitation } from './Invitations'
@@ -85,10 +88,10 @@ export function RecoveryCodes({ codes, done }: { codes: string[]; done: () => vo
   </section></main>
 }
 
-export function SecurityPanel({ email, verified, mfa, emailEnabled, mfaAvailable, refresh, codes, signedOut, changePassword }: {
-  email: string;
+export function SecurityPanel({ account, email, verified, mfa, emailEnabled, mfaAvailable, refresh, codes, signedOut, changePassword, onboarding = false }: {
+  account: Identity; email: string;
   verified: boolean; mfa: boolean; emailEnabled: boolean; mfaAvailable: boolean; refresh: () => Promise<unknown>;
-  codes: (value: string[], signOut: boolean) => void; signedOut: () => void; changePassword: () => void
+  codes: (value: string[], signOut: boolean) => void; signedOut: () => void; changePassword: () => void; onboarding?: boolean
 }) {
   const [enrollment, setEnrollment] = useState<{ secret: string } | null>(null)
   const [message, setMessage] = useState(''), [busy, setBusy] = useState(false)
@@ -100,13 +103,13 @@ export function SecurityPanel({ email, verified, mfa, emailEnabled, mfaAvailable
     try {
       await refresh()
       const response = await authRequest(action, action === 'mfa/confirm' ? { code: data.get('code') }
-        : { password: data.get('password'), code: data.get('code') || '' })
+        : { password: data.get('password') || '', code: data.get('code') || '' })
       if (!response.ok) { setMessage(await failure(response)); return }
       form.reset()
       if (action === 'mfa/enroll') setEnrollment(await response.json() as { secret: string })
       else if (action === 'mfa/confirm' || action === 'mfa/recovery-codes') {
         const result = await response.json() as { recovery_codes: string[] }
-        setEnrollment(null); codes(result.recovery_codes, action === 'mfa/confirm')
+        setEnrollment(null); codes(result.recovery_codes, false)
       } else if (action === 'mfa/disable') signedOut()
       else setMessage('Verification email requested. Check your inbox.')
     } catch { setMessage('Could not confirm the change. Please check your account before retrying.') }
@@ -117,15 +120,16 @@ export function SecurityPanel({ email, verified, mfa, emailEnabled, mfaAvailable
     ? `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(email)}?secret=${encodeURIComponent(enrollment.secret)}&issuer=${encodeURIComponent(issuer)}&algorithm=SHA1&digits=6&period=30`
     : ''
   return <section className="account-security-page" aria-labelledby="security-title">
-    <div className="security-page-heading"><div><h2 id="security-title">Security</h2><p>Manage email verification and sign-in protection.</p></div><button className="secondary-button" onClick={changePassword}>Change password</button></div>
+    <div className="security-page-heading"><div><h2 id="security-title">Security</h2><p>Manage email verification and sign-in protection.</p></div>{!onboarding && <button className="secondary-button" onClick={changePassword}>Change password</button>}</div>
     <div className="security-page-content">
+      {!onboarding && <SecurityPreferences account={account} />}
       <div className="security-status-strip">
         <div><MailCheck size={18} aria-hidden="true" /><span>Email</span><strong>{verified ? 'Verified' : 'Verification needed'}</strong></div>
         <div><ShieldCheck size={18} aria-hidden="true" /><span>MFA</span><strong>{mfa ? 'Enabled' : 'Not enabled'}</strong></div>
       </div>
       <Card className="rounded-xl">
         <CardHeader className="border-b border-slate-100 px-6 py-5">
-          <div className="flex items-start gap-3"><span className="mt-0.5 text-emerald-800"><KeyRound size={19} /></span><div><CardTitle>{enrollment ? 'Connect your authenticator' : 'Sign-in protection'}</CardTitle><CardDescription className="mt-2">{enrollment ? 'Scan the code with your authenticator app, then enter its current code.' : 'Verify your identity before changing account security settings.'}</CardDescription></div></div>
+          <div className="flex items-start gap-3"><span className="mt-0.5 text-emerald-800"><KeyRound size={19} /></span><div><CardTitle>{enrollment ? 'Connect your authenticator' : 'Sign-in protection'}</CardTitle><CardDescription className="mt-2">{enrollment ? 'Scan the code with your authenticator app, then enter its current code.' : hasVerifiedSession(account) ? 'Your verified session authorizes security changes.' : 'Verify your identity before changing account security settings.'}</CardDescription></div></div>
         </CardHeader>
         <CardContent className="p-6">
           {!verified && !emailEnabled ? <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed text-amber-900">Email delivery must be configured before you can verify your email and enable two-factor authentication.</div> : verified && !mfa && !mfaAvailable ? <p className="text-sm text-amber-800">Authenticator setup is unavailable right now. Contact your administrator.</p> : <form className="grid max-w-xl gap-5" onSubmit={submit}>
@@ -137,8 +141,8 @@ export function SecurityPanel({ email, verified, mfa, emailEnabled, mfaAvailable
               <div className="grid gap-2"><Label htmlFor="security-code">Authenticator code</Label><Input id="security-code" name="code" autoComplete="one-time-code" maxLength={64} required /></div>
               <Button type="submit" value="mfa/confirm" disabled={busy}><CheckCircle2 size={16} />{busy ? 'Confirming…' : 'Confirm authenticator'}</Button>
             </> : <>
-              <div className="grid gap-2"><Label htmlFor="security-password">Current password</Label><Input id="security-password" name="password" type="password" autoComplete="current-password" maxLength={128} required /></div>
-              {mfa && <FactorField required />}
+              {!hasVerifiedSession(account) && <div className="grid gap-2"><Label htmlFor="security-password">Current password</Label><Input id="security-password" name="password" type="password" autoComplete="current-password" maxLength={128} required /></div>}
+              {mfa && !hasVerifiedSession(account) && <FactorField required />}
               <div className="flex flex-wrap gap-3 border-t border-slate-100 pt-5">
                 {!verified && <Button type="submit" variant="outline" value="email/request" disabled={busy}><MailCheck size={16} />{busy ? 'Sending…' : 'Send verification email'}</Button>}
                 {verified && !mfa && mfaAvailable && <Button type="submit" value="mfa/enroll" disabled={busy}><ShieldCheck size={16} />{busy ? 'Preparing…' : 'Set up authenticator'}</Button>}

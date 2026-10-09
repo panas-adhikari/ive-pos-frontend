@@ -66,6 +66,11 @@ function apiProxy(): Plugin {
 export default defineConfig(({ mode, command }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_')
   const api = env.VITE_API_URL
+  const publicOrigin = env.VITE_PUBLIC_SITE_URL || (process.env.PAGES_CUSTOM_DOMAIN ? `https://${process.env.PAGES_CUSTOM_DOMAIN}` : 'https://ivepos.me')
+  const publicUrl = new URL(publicOrigin)
+  if (publicUrl.protocol !== 'https:' || publicUrl.origin !== publicOrigin || publicUrl.username || publicUrl.password) {
+    throw new Error('VITE_PUBLIC_SITE_URL must be an exact HTTPS origin without a trailing slash')
+  }
   if (api) {
     const parsed = new URL(api)
     if (parsed.origin !== api || parsed.username || parsed.password
@@ -76,5 +81,5 @@ export default defineConfig(({ mode, command }) => {
       throw new Error('Hosted builds require an HTTPS API origin')
     }
   }
-  return { base: '/', plugins: [react(), tailwindcss(), apiProxy()] }
+  return { base: '/', define: { 'import.meta.env.VITE_PUBLIC_SITE_URL': JSON.stringify(publicOrigin) }, build: { manifest: true }, plugins: [react(), tailwindcss(), apiProxy()] }
 })

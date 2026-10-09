@@ -1,0 +1,24 @@
+.product-tour-stage { position:relative; isolation:isolate; perspective:2600px; perspective-origin:55% 50%; }
+.ive-marketing .product-tour-image { position:relative; z-index:1; transition:box-shadow .45s; will-change:auto; cursor:zoom-out; }
+.product-shot-expanded .product-tour-image { cursor:zoom-in; will-change:auto; box-shadow:-18px 12px 24px -16px #193c3250,0 24px 48px -18px #193c3260; }
+.product-tour-image::after { content:""; position:absolute; inset:0; pointer-events:none; border-radius:inherit; background:linear-gradient(90deg,#193c321a,transparent 25%,#ffffff18 80%,#193c3210); opacity:0; transition:opacity .4s; }
+.product-shot-expanded .product-tour-image::after { opacity:1; }
+.product-tour-info { position:absolute; z-index:2; left:0; top:50%; translate:0 -50%; width:32%; padding:12px 8px 12px 0; }
+.product-tour-info[aria-hidden="true"] { pointer-events:none; }
+.ive-marketing .product-tour-info h3 { font-size:clamp(22px,2.5vw,36px); line-height:1.08; letter-spacing:-.04em; text-wrap:balance; }
+.product-tour-eyebrow { color:var(--marketing-muted); font-size:9px; letter-spacing:.12em; font-weight:600; margin-bottom:14px; }
+.product-tour-info ul { display:grid; gap:10px; list-style:none; padding:0; margin:18px 0 12px; font-size:12px; line-height:1.5; }
+.product-tour-info li { display:flex; align-items:flex-start; gap:8px; }.product-tour-info li svg { flex:none; margin-top:2px; }
+.product-tour-info .marketing-link { font-size:12px; gap:8px; }
+@media (min-width:901px) { .access-composition .product-tour-info h3,.report-composition .product-tour-info h3 { font-size:24px; } }
+@media (max-width:600px) {
+  .product-tour-stage { perspective:2000px; }.product-tour-info { padding-right:4px; }
+  .ive-marketing .product-tour-info h3 { font-size:20px; }.product-tour-eyebrow { font-size:8px; margin-bottom:10px; }
+  .product-tour-info ul { gap:9px; font-size:11px; margin-block:14px 8px; }.product-tour-info li { gap:5px; }.product-tour-info li svg { width:11px; }
+  .product-tour-info .marketing-link { font-size:10px; gap:4px; line-height:1.6; }.product-tour-info .marketing-link svg { width:12px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .product-tour-image::after { transition:none; }
+  .ive-marketing .product-tour-image { transform:none !important; }
+  .ive-marketing .product-shot-expanded .product-tour-image { transform:translateX(37%) scale(.66) !important; }
+}

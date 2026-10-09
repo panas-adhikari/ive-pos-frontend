@@ -34,3 +34,7 @@ backupcodes.txt
 *.dump
 *.dump.*
 backups/
+
+# Generated audit output and accidental Windows temporary paths
+/artifacts/
+/C:*/
