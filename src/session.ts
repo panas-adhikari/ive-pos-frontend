@@ -11,6 +11,7 @@ export type Identity = {
   email_verified: boolean
   must_change_password: boolean
   mfa_enabled: boolean
+  require_action_verification: boolean
   step_up_expires: string | null
   memberships: {
     organization_id: string; name: string; image_url: string; organization_type: string; permissions: string[]; roles: string[];
@@ -44,4 +45,8 @@ export async function identity(): Promise<Identity | null> {
   if (response.status === 401) return null
   if (!response.ok) throw new Error('Unable to reach your account. Please retry.')
   return response.json() as Promise<Identity>
+}
+
+export function hasVerifiedSession(account: Identity | null | undefined) {
+  return !!(account?.mfa_enabled && account.step_up_expires && new Date(account.step_up_expires).getTime() > Date.now())
 }

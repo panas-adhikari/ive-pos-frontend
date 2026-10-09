@@ -96,3 +96,8 @@
   .credential-popover .step-up-actions { flex-direction: column; }
   .onboarding-profile dl { grid-template-columns: 1fr; gap: 5px; }
 }
+
+.organization-address-input { display: flex; align-items: center; gap: 10px; }
+.organization-address-input input { min-width: 0; flex: 1; }
+.organization-address-input > span { white-space: nowrap; color: #586e61; font-size: 13px; }
+.credential-recipient a, .onboarding-profile dd a { overflow-wrap: anywhere; }

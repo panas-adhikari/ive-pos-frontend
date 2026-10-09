@@ -1,0 +1,60 @@
+.platform-users-page {
+  --user-ready-bg: #edf6ee;
+  --user-ready-ink: #286442;
+  --user-pending-bg: #fbf4e6;
+  --user-pending-ink: #826026;
+  --user-inactive-bg: #f0f2f1;
+  --user-inactive-ink: #59665f;
+}
+.platform-users-page .platform-heading-actions button { display:inline-flex; align-items:center; gap:8px; }
+.platform-users-page .platform-staff-form { background:#fff; border:1px solid var(--platform-line); border-radius:10px; padding:24px; }
+.platform-users-page > [role="alert"], .platform-users-page > [role="status"] { margin:0 0 20px; padding:14px 18px; border-radius:6px; background:#edf6ee; font-size:13px; overflow-wrap:anywhere; }
+.platform-users-page > [role="alert"] { color:#963b30; background:#fff0eb; }
+.platform-user-directory tbody tr { cursor:default !important; }
+.platform-users-table { min-width:730px; }
+.platform-users-table th:first-child { width:34%; }
+.platform-user-sort { display:inline-flex; align-items:center; gap:8px; padding:0; min-height:24px; background:transparent; border:0; color:inherit; font:inherit; text-transform:inherit; letter-spacing:inherit; }
+.platform-user-mobile-sort { display:none; }
+.platform-user-person { display:flex; align-items:center; gap:12px; }
+.platform-user-avatar { display:grid; place-items:center; flex:none; width:40px; height:40px; border:1px solid #dae7dc; border-radius:50%; background:#edf4eb; color:#376a4b; font-size:12px; font-weight:700; }
+.platform-user-person > div { display:grid; gap:4px; overflow-wrap:anywhere; min-width:150px; max-width:330px; }
+.platform-user-person strong { font-size:13px; font-weight:650; }
+.platform-user-person span:not(.platform-user-avatar) { color:var(--platform-muted); font-size:12px; }
+.platform-user-person small { color:#748278; font-size:11px; }
+.platform-user-role { display:inline-flex; align-items:center; gap:6px; color:#586b5e; white-space:nowrap; font-size:12px; }
+.platform-user-role.is-admin { color:#285c43; font-weight:600; }
+.platform-user-state { display:inline-flex; align-items:center; gap:6px; padding:6px 8px; border-radius:5px; white-space:nowrap; font-size:11px; font-weight:550; }
+.platform-user-state > span { width:5px; height:5px; border-radius:50%; background:currentColor; }
+.platform-user-state.is-ready { background:var(--user-ready-bg); color:var(--user-ready-ink); }
+.platform-user-state.is-pending { background:var(--user-pending-bg); color:var(--user-pending-ink); }
+.platform-user-state.is-inactive { background:var(--user-inactive-bg); color:var(--user-inactive-ink); }
+.platform-user-security { display:grid; gap:7px; white-space:nowrap; font-size:11px; }
+.platform-user-security > span { display:flex; align-items:center; gap:6px; }
+.platform-user-security .is-complete { color:#436d51; }
+.platform-user-security .is-incomplete { color:#846a3a; }
+.platform-security-dot { width:4px; height:4px; margin-inline:4px; border-radius:50%; background:currentColor; }
+@media (max-width:600px) {
+  .platform-users-page .platform-heading-actions { gap:8px; }
+  .platform-users-page .platform-heading-actions button { font-size:12px; }
+  .platform-users-page .platform-staff-form { padding:18px; }
+  .platform-users-page .platform-table-toolbar > label:not(.platform-search) { flex:1 1 120px; }
+  .platform-user-mobile-sort { display:inline-flex; align-items:center; gap:6px; font-size:12px; }
+  .platform-users-table { display:block; min-width:0; }
+  .platform-users-table thead { display:none; }
+  .platform-users-table tbody { display:block; }
+  .platform-user-directory .platform-users-table tbody tr { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; padding:18px 14px; border-bottom:1px solid var(--platform-line); }
+  .platform-users-table tbody tr:last-child { border-bottom:0; }
+  .platform-users-table tbody th, .platform-users-table tbody td { display:block; padding:0; border:0; width:auto; }
+  .platform-users-table tbody th:first-child { width:auto; }
+  .platform-users-table tbody th, .platform-users-table tbody td:nth-child(2) { grid-column:1 / -1; }
+  .platform-users-table tbody td:nth-child(2) { padding-left:52px; }
+  .platform-user-person > div { min-width:0; max-width:none; }
+  .platform-user-person { align-items:flex-start; }
+  .platform-user-person strong { line-height:1.5; }
+  .platform-user-person span:not(.platform-user-avatar) { line-height:1.5; }
+  .platform-user-security { gap:5px; }
+}
+@media (max-width:360px) {
+  .platform-user-directory .platform-users-table tbody tr { grid-template-columns:1fr; }
+  .platform-users-table tbody td:nth-child(3), .platform-users-table tbody td:nth-child(4) { padding-left:52px; }
+}
