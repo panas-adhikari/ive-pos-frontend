@@ -12,8 +12,12 @@ function subscribe(listener: () => void) {
 export function usePathname() {
   return useSyncExternalStore(subscribe, () => window.location.pathname.replace(/\/$/, '') || '/', () => '/')
 }
+export function navigationAllowed() {
+  return window.dispatchEvent(new Event('ivepos:before-navigation', { cancelable: true }))
+}
 export function navigate(path: string, replace = false) {
   if (path === window.location.pathname + window.location.search && !window.location.hash) return
+  if (!replace && !navigationAllowed()) return
   window.history[replace ? 'replaceState' : 'pushState'](null, '', path)
   window.dispatchEvent(new Event(navigationEvent))
 }

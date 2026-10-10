@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test'
 const admin = { id: 'admin', email: 'admin@example.com', full_name: 'Platform Admin', phone: '', job_title: '', platform_role: 'super_admin', session_id: 'session', email_verified: true, must_change_password: false, mfa_enabled: true, require_action_verification: false, step_up_expires: '2099-01-01T00:00:00Z', memberships: [] }
 const organization = { id: 'org-test', name: 'Atharva Organization', slug: null, subdomain_enabled: false, login_url: 'http://app.localhost:18091/login', organization_type: 'retail', image_url: '', location_label: '', configured: true, store_limit: 2, employee_limit: 10, active_employees: 1, deletion_scheduled_for: null, billing_plan: null, billing_amount_minor: null, billing_currency: null, billing_interval: null, contact_email: '', phone: '', owner_name: '', owner_phone: '', owner_title: '', website_url: '', latitude: null, longitude: null, currency: 'NPR', timezone: 'Asia/Kathmandu', stores: 1, version: 1, store_limit_requests: [] }
 type MockAccount = Omit<typeof admin, 'memberships'> & { memberships: { organization_id: string; name: string; image_url: string; organization_type: string; permissions: string[]; roles: string[]; all_stores: boolean; store_ids: string[] }[] }
-async function mockApi(page: Page, options: { loggedIn?: boolean; refresh?: boolean; account?: MockAccount } = {}) {
+async function mockApi(page: Page, options: { loggedIn?: boolean; refresh?: boolean; account?: MockAccount; resetFailure?: boolean } = {}) {
   let loggedIn = options.loggedIn ?? true
   const account = options.account ?? admin
   const calls: string[] = []
@@ -15,11 +15,14 @@ async function mockApi(page: Page, options: { loggedIn?: boolean; refresh?: bool
     if (path.endsWith('/auth/refresh')) { if (options.refresh) loggedIn = true; return route.fulfill({ status: loggedIn ? 200 : 401, json: {} }) }
     if (path.endsWith('/auth/login')) { loggedIn = true; return route.fulfill({ json: {} }) }
     if (path.endsWith('/auth/logout')) { loggedIn = false; return route.fulfill({ json: {} }) }
+    if (path.endsWith('/auth/step-up')) { account.step_up_expires = '2099-01-01T00:00:00Z'; return route.fulfill({ json: {} }) }
     if (path.endsWith('/auth/capabilities')) return route.fulfill({ json: { email: true, mfa: true } })
     if (path.endsWith('/public/site')) return route.fulfill({ json: { organization: new URL(route.request().url()).hostname === 'atharva.localhost' ? { ...organization, slug: 'atharva' } : null, platform_url: 'http://app.localhost:18091', tenant_base_domain: 'localhost' } })
     if (path.endsWith('/ready')) return route.fulfill({ json: { status: 'ready' } })
     if (path.endsWith('/platform/organizations')) return route.fulfill({ json: [organization] })
-    if (path.endsWith('/organizations/org-test')) return route.fulfill({ json: organization })
+    if (path.endsWith('/organizations/org-test')) return route.fulfill({ json: { ...organization, contact_email: 'owner@example.com' } })
+    if (path.endsWith('/owner-password-reset')) return route.fulfill(options.resetFailure ? { status: 409, json: { detail: 'Organization changed. Refresh before resetting the password.' } } : { json: { id: organization.id, organization: organization.name, email: 'owner@example.com', login_url: organization.login_url, temporary_password: 'test-temporary-password-12345' } })
+    if (path.endsWith('/owner-credentials-email')) return route.fulfill({ status: 202, json: { status: 'queued' } })
     if (path.endsWith('/subdomain-options')) return route.fulfill({ json: { domain: 'localhost', suggestions: [] } })
     if (path.endsWith('/billing')) return route.fulfill({ json: { payments: [], recorded_totals: [] } })
     if (path.endsWith('/platform/staff')) return route.fulfill({ json: [] })
@@ -147,4 +150,53 @@ test('accounts with platform and organization roles can switch workspaces', asyn
   await expect(page).toHaveURL(/\/overview$/)
   await page.goBack()
   await expect(page).toHaveURL(/\/inventory$/)
+})
+
+for (const width of [1440, 390]) {
+  test(`organization administrator password reset at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 1000 })
+    const errors: string[] = []
+    page.on('pageerror', error => errors.push(error.message))
+    const calls = await mockApi(page, { account: { ...admin, step_up_expires: '' } })
+    await page.goto('/organizations/org-test')
+    await page.getByRole('button', { name: 'Reset administrator password', exact: true }).click()
+    expect(calls.some(path => path.endsWith('/owner-password-reset'))).toBe(false)
+    await page.getByRole('button', { name: 'Cancel', exact: true }).click()
+    await expect(page.getByRole('button', { name: 'Generate temporary password' })).toHaveCount(0)
+    await page.getByRole('button', { name: 'Reset administrator password', exact: true }).click()
+    await page.locator('.platform-password-reset').screenshot({ path: testInfo.outputPath(`reset-confirm-${width}.png`) })
+    await page.getByRole('button', { name: 'Generate temporary password' }).click()
+    const verification = page.getByRole('dialog', { name: 'Verify to continue' })
+    await verification.getByLabel('Password', { exact: true }).fill('test admin password')
+    await verification.getByLabel('Authenticator or backup code').fill('123456')
+    await verification.getByRole('button', { name: 'Verify and continue' }).click()
+    const credentials = page.getByRole('dialog', { name: 'Temporary password ready' })
+    await expect(credentials).toBeVisible()
+    await expect(credentials.locator('code')).toHaveText('test-temporary-password-12345')
+    await credentials.screenshot({ path: testInfo.outputPath(`reset-password-${width}.png`) })
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    expect(calls.filter(path => path.endsWith('/owner-password-reset'))).toHaveLength(1)
+    await credentials.getByRole('button', { name: 'Email sign-in details' }).click()
+    await expect(credentials.getByText('Email queued', { exact: true }).first()).toBeVisible()
+    await credentials.getByRole('button', { name: 'Done', exact: true }).click()
+    await expect(page.getByText('test-temporary-password-12345', { exact: true })).toHaveCount(0)
+    await expect(page.getByRole('status')).toContainText('Administrator password reset')
+    expect(errors).toEqual([])
+  })
+}
+
+test('platform employees cannot access the reset control', async ({ page }) => {
+  await mockApi(page, { account: { ...admin, platform_role: 'employee' } })
+  await page.goto('/organizations/org-test')
+  await expect(page.getByRole('heading', { name: 'Atharva Organization', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Reset administrator password' })).toHaveCount(0)
+})
+
+test('failed reset displays an error without showing credentials', async ({ page }) => {
+  await mockApi(page, { resetFailure: true })
+  await page.goto('/organizations/org-test')
+  await page.getByRole('button', { name: 'Reset administrator password', exact: true }).click()
+  await page.getByRole('button', { name: 'Generate temporary password' }).click()
+  await expect(page.getByRole('alert')).toContainText('Refresh before resetting')
+  await expect(page.getByRole('dialog', { name: 'Temporary password ready' })).toHaveCount(0)
 })

@@ -6,12 +6,14 @@ import { OrganizationStepUpProvider, useOrganizationStepUp } from './PlatformSte
 import './stores.css'
 import { setupRequest } from './organization-api'
 import StoreDirectory from './StoreDirectory'
+import OrganizationSettings from './OrganizationSettings'
+import { navigationAllowed } from './navigation'
 
-type Business = {
+export type Business = {
   id: string; name: string; phone: string; contact_email: string; currency: string;
   timezone: string; receipt_footer: string; configured: boolean; version: number;
   organization_type: string; image_url: string; website_url: string; location_label: string;
-  store_limit: number; employee_limit: number
+  store_limit: number; employee_limit: number; slug?: string | null; subdomain_enabled?: boolean; login_url?: string
 }
 export type Register = { id: string; code: string; name: string; active: boolean; version: number }
 export type Store = {
@@ -31,8 +33,8 @@ export default function StoreSetup({ mode = 'stores', openSettings }: { mode?: '
   if (!account.data) return null
   if (!selected) return <section className="panel"><h2>{mode === 'settings' ? 'Organization settings' : 'Stores'}</h2><p className="muted">Your account does not have permission to manage this organization. Contact the organization owner.</p></section>
   return <section id="setup" className="store-setup" aria-label={mode === 'settings' ? 'Organization settings' : 'Store and register setup'}>
-    <div className="setup-heading"><h2>{mode === 'settings' ? selected.name : 'Stores & registers'}</h2>
-      {memberships.length > 1 && <label>Organization<select aria-label="Organization" value={selected.organization_id} onChange={e => setOrganizationId(e.target.value)}>
+    <div className="setup-heading"><h2>{mode === 'settings' ? 'Organization settings' : 'Stores & registers'}</h2>
+      {memberships.length > 1 && <label>Organization<select aria-label="Organization" value={selected.organization_id} onChange={e => { if (navigationAllowed()) setOrganizationId(e.target.value) }}>
         {memberships.map(m => <option key={m.organization_id} value={m.organization_id}>{m.name}</option>)}
       </select></label>}
     </div>
@@ -47,8 +49,6 @@ function Workspace({ organizationId, mode, openSettings }: { organizationId: str
     queryFn: () => setupRequest(`${organizationId}/setup`), retry: false, refetchOnWindowFocus: false })
   const [storeId, setStoreId] = useState('')
   const [editor, setEditor] = useState<Editor | null>(null)
-  const [requestingStores, setRequestingStores] = useState(false)
-  const [requestMessage, setRequestMessage] = useState('')
   const [message, setMessage] = useState(''), [error, setError] = useState(''), [busy, setBusy] = useState(false)
   useEffect(() => {
     if (editor) document.querySelector<HTMLInputElement>('.setup-editor input')?.focus()
@@ -79,38 +79,19 @@ function Workspace({ organizationId, mode, openSettings }: { organizationId: str
     await save(`stores/${store.id}${register ? `/registers/${register.id}` : ''}/status`, 'POST',
       { active: !row.active, expected_version: row.version })
   }
-  async function requestMoreStores(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    const values = new FormData(event.currentTarget)
-    setBusy(true); setError(''); setRequestMessage('')
-    try {
-      await setupRequest(`${organizationId}/store-limit-requests`, 'POST', {
-        requested_limit: Number(values.get('requested_limit')),
-        reason: String(values.get('reason') || '').trim(),
-      })
-      setRequestingStores(false)
-      setRequestMessage('Request sent to the platform team for review.')
-    } catch (reason) { setError(reason instanceof Error ? reason.message : 'Unable to send the request.') }
-    finally { setBusy(false) }
-  }
-  if (query.isPending) return <p role="status">Loading stores…</p>
+  if (query.isPending) return <p role="status">Loading {mode === 'settings' ? 'organization settings' : 'stores'}…</p>
   if (!query.data) return <section className="panel"><p role="alert">{query.error?.message || 'Unable to load setup.'}</p><button className="secondary-button" onClick={() => void reload()}>Retry loading setup</button></section>
   const data = query.data
+  if (mode === 'settings') return <OrganizationSettings key={organizationId} data={data} reload={reload} />
   return <>
     {query.isError && <div className="setup-alert"><p role="alert">{query.error.message}</p><button className="secondary-button" disabled={busy} onClick={() => void reload()}>Retry loading setup</button></div>}
     {error && !(editor?.kind === 'store' && !editor.store) && <div role="alert" className="setup-alert"><p>{error}</p><button className="secondary-button" disabled={busy} onClick={() => { setEditor(null); setError(''); void reload() }}>Reload latest details</button></div>}
     {message && <p role="status" className="setup-message">{message}</p>}
-    {mode === 'settings' ? <><section className="panel business-summary" aria-label="Business settings">
-      <div><p className="eyebrow">{data.organization.configured ? 'BUSINESS DETAILS' : 'STEP 1 · BUSINESS DETAILS'}</p>
-        <div className="settings-profile-heading">{data.organization.image_url ? <img src={data.organization.image_url} alt="" /> : <span>{data.organization.name.charAt(0).toUpperCase()}</span>}<div><h3>{data.organization.name}</h3><p className="muted">{data.organization.organization_type} · {data.organization.location_label || 'Location not set'}</p></div></div><p className="muted">{data.organization.currency} · {data.organization.timezone}</p>{data.organization.website_url && <a href={data.organization.website_url} target="_blank" rel="noreferrer">{data.organization.website_url}</a>}
-        {!data.organization.configured && <p className="muted">Confirm your business details before adding a store.</p>}
-      </div>
-      <button className="secondary-button" disabled={busy} onClick={() => setEditor({ kind: 'business' })}>{data.organization.configured ? 'Edit organization' : 'Configure organization'}</button>
-    </section>{editor && <SetupForm key="business" editor={editor} data={data} disabled={busy} save={save} close={() => setEditor(null)} />}<section className="panel capacity-panel"><div><p className="eyebrow">CAPACITY</p><h3>Store allowance</h3><p className="muted">{data.stores.length} of {data.organization.store_limit} stores used. Store limits are reviewed by your platform administrator.</p><div className="progress-track"><span style={{ width: `${Math.min(100, data.stores.length / Math.max(data.organization.store_limit, 1) * 100)}%` }} /></div><p className="muted">Employee allowance: {data.organization.employee_limit}</p></div><button className="secondary-button" onClick={() => setRequestingStores(value => !value)} aria-expanded={requestingStores}>Request more stores</button>{requestingStores && <form className="store-limit-request" onSubmit={requestMoreStores}><label>Requested total stores<input name="requested_limit" type="number" min={data.organization.store_limit + 1} max="10000" defaultValue={data.organization.store_limit + 1} required /></label><label>Why do you need more stores?<textarea name="reason" minLength={10} maxLength={1000} required placeholder="Tell the platform team about your planned locations." /></label><div className="action-row"><button className="primary-button" disabled={busy}>{busy ? 'Sending…' : 'Send request'}</button><button type="button" className="secondary-button" onClick={() => setRequestingStores(false)}>Cancel</button></div></form>}{requestMessage && <p role="status" className="setup-message">{requestMessage}</p>}</section></> : !data.organization.configured && <section className="panel settings-prompt"><div><h3>Finish organization settings first</h3><p className="muted">Confirm your business details before adding a store.</p></div><button className="secondary-button" onClick={openSettings}>Open settings</button></section>}
-    {mode === 'stores' && <>
+    {!data.organization.configured && <section className="panel settings-prompt"><div><h3>Finish organization settings first</h3><p className="muted">Confirm your business details before adding a store.</p></div><button className="secondary-button" onClick={openSettings}>Open settings</button></section>}
+    <>
     {editor && (editor.kind === 'store' && !editor.store ? <div className="store-editor-backdrop" onMouseDown={event => { if (event.target === event.currentTarget && !busy) setEditor(null) }}><div className="store-editor-dialog" role="dialog" aria-modal="true" aria-label="Add a store"><SetupForm key="new-store" editor={editor} data={data} disabled={busy} error={error} save={save} close={() => setEditor(null)} /></div></div> : <SetupForm key={`${editor.kind}-${editor.store?.id || 'new'}-${editor.register?.id || ''}`} editor={editor} data={data} disabled={busy} save={save} close={() => setEditor(null)} />)}
     <StoreDirectory data={data} selectedId={storeId} select={id => { setStoreId(id); setEditor(null); setError(''); setMessage('') }} busy={busy} refreshing={query.isFetching} refresh={() => void reload()} openSettings={openSettings} addStore={() => setEditor({ kind: 'store' })} editStore={store => { setStoreId(store.id); setEditor({ kind: 'store', store }) }} addRegister={store => setEditor({ kind: 'register', store })} editRegister={(store, register) => setEditor({ kind: 'register', store, register })} status={status} />
-    </>}
+    </>
 
   </>
 }
