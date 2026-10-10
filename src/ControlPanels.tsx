@@ -9,7 +9,7 @@ import './onboarding.css'
 import './organization-created.css'
 
 type Metric = { label: string; value: string; note: string; pending?: boolean }
-export type PlatformOrganization = { id: string; slug: string; login_url: string; name: string; organization_type: string; image_url: string; location_label: string; configured: boolean; store_limit: number; employee_limit: number; active_employees: number; deletion_scheduled_for: string | null; billing_plan: string | null; billing_amount_minor: number | null; billing_currency: string | null; billing_interval: 'monthly' | 'yearly' | null }
+export type PlatformOrganization = { id: string; slug: string | null; subdomain_enabled: boolean; login_url: string; name: string; organization_type: string; image_url: string; location_label: string; configured: boolean; store_limit: number; employee_limit: number; active_employees: number; deletion_scheduled_for: string | null; billing_plan: string | null; billing_amount_minor: number | null; billing_currency: string | null; billing_interval: 'monthly' | 'yearly' | null }
 export type OrganizationDetail = PlatformOrganization & { contact_email: string; phone: string; owner_name: string; owner_phone: string; owner_title: string; website_url: string; latitude: number | null; longitude: number | null; currency: string; timezone: string; stores: number; version: number; billing_tier: string | null; store_limit_requests: { id: string; created: string; current_limit: number; requested_limit: number; reason: string }[] }
 export type ProvisionedOwner = { id: string; login_url: string; organization: string; email: string; temporaryPassword: string }
 

@@ -6,21 +6,17 @@ import { platformRequest } from './platform-api'
 import { usePlatformStepUp } from './PlatformStepUp'
 import { LocationMapPicker } from './ControlPanels'
 import type { ProvisionedOwner } from './ControlPanels'
-import { tenantBaseDomain, workspaceUrl } from './public/host'
+import { appLoginUrl } from './public/host'
 import './organization-create.css'
 
 type Draft = {
-  name: string; slug: string; image_url: string; store_limit: string; employee_limit: string; organization_type: 'retail' | 'wholesale' | 'other'
+  name: string; image_url: string; store_limit: string; employee_limit: string; organization_type: 'retail' | 'wholesale' | 'other'
   location_label: string; latitude: number | null; longitude: number | null; website_url: string
   owner_name: string; owner_email: string; owner_email_confirmed: boolean; owner_temporary_password: string; owner_phone: string; owner_title: string
 }
 function temporaryPassword() {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789!@$%*+-_'
   return Array.from(crypto.getRandomValues(new Uint8Array(24)), byte => alphabet[byte % alphabet.length]).join('')
-}
-function suggestedSlug(name: string) {
-  const slug = Array.from(name.normalize('NFKD')).filter(character => character.charCodeAt(0) < 128).join('').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 63).replace(/-+$/g, '') || 'store'
-  try { workspaceUrl(slug); return slug } catch { return `${slug}-store` }
 }
 function Logo({ url, name }: { url: string; name: string }) {
   const [failed, setFailed] = useState('')
@@ -39,12 +35,11 @@ export default function InviteOrganization({ close, created }: { close: () => vo
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [draft, setDraft] = useState<Draft>(() => ({
-    name: '', slug: '', image_url: '', store_limit: '1', employee_limit: '5', organization_type: 'retail',
+    name: '', image_url: '', store_limit: '1', employee_limit: '5', organization_type: 'retail',
     location_label: '', latitude: null, longitude: null, website_url: '', owner_name: '', owner_email: '', owner_email_confirmed: false,
     owner_temporary_password: temporaryPassword(), owner_phone: '', owner_title: '',
   }))
-  const slug = draft.slug.trim() || suggestedSlug(draft.name)
-  const address = `${slug}.${tenantBaseDomain}`
+  const address = new URL(appLoginUrl).host
   function update<K extends keyof Draft>(key: K, value: Draft[K]) { setDraft(current => ({ ...current, [key]: value, ...(key === 'owner_email' ? { owner_email_confirmed: false } : {}) })); setError('') }
   function go(next: number) {
     setStep(next); setError('')
@@ -62,7 +57,6 @@ export default function InviteOrganization({ close, created }: { close: () => vo
     for (const value of [draft.image_url, draft.website_url]) {
       if (value.trim()) { try { const url = new URL(value.trim()); if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password) return 'Use an http or https URL without embedded credentials.' } catch { return 'Enter a valid logo or website URL.' } }
     }
-    if (draft.slug.trim()) { try { workspaceUrl(draft.slug) } catch { return 'This sign-in address is reserved or invalid. Use letters, numbers, and hyphens.' } }
     return ''
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -73,7 +67,7 @@ export default function InviteOrganization({ close, created }: { close: () => vo
     if (step === 1) { go(2); return }
     if (!draft.owner_name.trim()) { setError('Enter the administrator’s name.'); return }
     setBusy(true); setError('')
-    const payload = { ...draft, name: draft.name.trim(), slug: draft.slug.trim(), location_label: draft.location_label.trim(),
+    const payload = { ...draft, name: draft.name.trim(), location_label: draft.location_label.trim(),
       image_url: draft.image_url.trim(), website_url: draft.website_url.trim(), owner_name: draft.owner_name.trim(),
       owner_email: draft.owner_email.trim().toLowerCase(), owner_phone: draft.owner_phone.trim(), owner_title: draft.owner_title.trim(),
       store_limit: Number(draft.store_limit), employee_limit: Number(draft.employee_limit) }
@@ -105,7 +99,6 @@ export default function InviteOrganization({ close, created }: { close: () => vo
             </div>
             <section className="org-create-capacity" aria-labelledby="create-capacity-title"><div><h3 id="create-capacity-title">Workspace capacity</h3><span>Set the allowances for this business.</span></div><div className="org-create-presets">{[{ label: 'Small team', stores: '1', users: '5' }, { label: 'Growing team', stores: '3', users: '20' }].map(preset => <button type="button" key={preset.label} aria-pressed={draft.store_limit === preset.stores && draft.employee_limit === preset.users} onClick={() => { setDraft(current => ({ ...current, store_limit: preset.stores, employee_limit: preset.users })); setError('') }}><strong>{preset.label}</strong><span>{preset.stores} {preset.stores === '1' ? 'store' : 'stores'} · {preset.users} employee seats</span></button>)}</div><div className="org-create-fields"><label>Store allowance<input name="store_limit" type="number" min="1" max="10000" value={draft.store_limit} onChange={e => update('store_limit', e.target.value)} required /></label><label>Employee seats<input name="employee_limit" type="number" min="1" max="100000" value={draft.employee_limit} onChange={e => update('employee_limit', e.target.value)} required /></label></div></section>
             <details key="business-options" className="org-create-options"><summary>Branding, website & location pin<span>Optional</span></summary><div className="org-create-fields">
-              <label className="org-create-wide">Custom sign-in address<div className="org-create-address"><input name="slug" value={draft.slug} onChange={e => update('slug', e.target.value.toLowerCase())} placeholder={suggestedSlug(draft.name)} pattern="[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?" maxLength={63} autoComplete="off" autoCapitalize="none" spellCheck={false} /><span>.{tenantBaseDomain}</span></div><small>Leave blank to assign an address from the business name.</small></label>
               <label className="org-create-wide">Logo URL<input name="image_url" type="url" value={draft.image_url} onChange={e => update('image_url', e.target.value)} placeholder="https://example.com/logo.png" maxLength={1000} /><small>Use a publicly accessible image.</small></label>
               <label className="org-create-wide">Website<input name="website_url" type="url" value={draft.website_url} onChange={e => update('website_url', e.target.value)} placeholder="https://example.com" maxLength={300} /></label>
               <label className="org-create-check org-create-wide"><input type="checkbox" checked={showMap} onChange={e => { setShowMap(e.target.checked); if (!e.target.checked) setDraft(current => ({ ...current, latitude: null, longitude: null })); setError('') }} /><span>Add a location pin</span></label>
@@ -127,10 +120,10 @@ export default function InviteOrganization({ close, created }: { close: () => vo
       </form>
       <aside className="org-create-preview" aria-label="Live organization preview">
         <div className="org-create-preview-heading"><span className="org-create-kicker">Workspace preview</span><span><span aria-hidden="true" />Live</span></div>
-        <div className="org-create-browser"><Globe size={13} aria-hidden="true" /><span>{draft.name.trim() || draft.slug.trim() ? address : `your-business.${tenantBaseDomain}`}</span><LockKeyhole size={12} aria-hidden="true" /></div>
+        <div className="org-create-browser"><Globe size={13} aria-hidden="true" /><span>{address}</span><LockKeyhole size={12} aria-hidden="true" /></div>
         <div className="org-create-signin"><Logo url={draft.image_url.trim()} name={draft.name} /><span className="org-create-business-type">{draft.organization_type}</span><h3>{draft.name.trim() || 'Your business'}</h3><p>Your business workspace</p><div className="org-create-preview-login"><span>Administrator email</span><div>{draft.owner_email.trim() || 'owner@business.com'}</div><span>Password</span><div className="org-create-preview-dots">••••••••••••</div><div className="org-create-preview-button">Sign in<ArrowRight size={14} aria-hidden="true" /></div></div></div>
         <div className="org-create-preview-meta"><div><MapPin size={15} aria-hidden="true" /><span>{draft.location_label.trim() || 'Location to be added'}</span></div><div><Store size={15} aria-hidden="true" /><span>{draft.store_limit || '—'} {draft.store_limit === '1' ? 'store' : 'stores'}</span><Users size={15} aria-hidden="true" /><span>{draft.employee_limit || '—'} employee seats</span></div>{draft.owner_name.trim() && <div><ShieldCheck size={15} aria-hidden="true" /><span>{draft.owner_name.trim()} · Administrator</span></div>}</div>
-        <p className="org-create-preview-note">Preview only. The final sign-in address is confirmed on creation.</p>
+        <p className="org-create-preview-note">Starts with platform sign-in. Choose an optional subdomain from the organization’s Subdomain form after creation.</p>
       </aside>
     </div>
   </div>
