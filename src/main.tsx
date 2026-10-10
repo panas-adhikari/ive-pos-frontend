@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot, hydrateRoot } from 'react-dom/client'
 import './index.css'
-import { isOrganizationHost } from './public/host'
+import { appLoginUrl, isOrganizationHost } from './public/host'
 import { applyPageMetadata } from './public/seo'
 
 async function start() {
@@ -9,7 +9,8 @@ async function start() {
   const path = window.location.pathname.replace(/\/$/, '') || '/'
   const tenant = isOrganizationHost()
   const emailLink = new URLSearchParams(window.location.hash.slice(1)).has('identity')
-  const publicPath = !tenant && !emailLink && (path === '/' || path === '/features')
+  const appHost = window.location.hostname === new URL(appLoginUrl).hostname
+  const publicPath = !tenant && !emailLink && (path === '/features' || path === '/' && !appHost)
   applyPageMetadata(emailLink ? '/login' : path, tenant)
   const { default: Entry } = publicPath
     ? path === '/features' ? await import('./public/FeaturesPage') : await import('./public/LandingPage')

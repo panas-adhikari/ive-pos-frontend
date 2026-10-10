@@ -99,8 +99,40 @@ VITE_API_URL=https://YOUR-RENDER-API-ORIGIN
 Set these on the production environment and rebuild after changes. Add
 `www.ivepos.me` and `app.ivepos.me` to the matching frontend project(s); deploy the
 branch containing these changes or merge it into the configured production branch.
-Registered organization URLs additionally need wildcard domain/DNS/TLS routing
-and a same-origin `/api` proxy to the backend that preserves tenant context.
-`VITE_API_URL` is intentionally ignored on organization hosts. A wildcard frontend
-domain alone cannot provide that API routing. See the backend deployment runbook's
-"Vercel frontend and Render API" section for the required verification.
+Registered organization URLs additionally need wildcard domain/DNS/TLS routing.
+The included `api/proxy.mjs` function and `/api/:path*` rewrite provide the same-origin
+API connection to Render. Set server-side `API_PROXY_ORIGIN=https://api.ivepos.me`
+(the default) or the exact HTTPS backend origin. Keep
+`VITE_TENANT_BASE_DOMAIN=ivepos.me` and `VITE_APP_LOGIN_URL=https://app.ivepos.me/login`
+available to the Vercel function as well as the build. The backend needs
+`PUBLIC_ORIGIN=https://app.ivepos.me` and `TENANT_BASE_DOMAIN=ivepos.me`.
+
+The proxy supplies the original workspace origin for reads, verifies the actual
+origin and CSRF header on writes, and keeps session cookies on the workspace host.
+Unknown organizations still return the backend's 404. No database or authentication
+secrets belong in this frontend project. `VITE_API_URL` is intentionally ignored on
+organization hosts. Deploy from this repository with its `api` directory and
+`vercel.json`, rather than uploading only `dist`. Verify the deployed routing with
+`https://atharva.ivepos.me/api/v1/public/site`: it must return JSON for Atharva
+Organization, even without a browser Origin header. A Vercel text/HTML 404 means
+the proxy function/rewrite hasn't been deployed. Run proxy regressions with
+`node tests/api-proxy.test.mjs`.
+
+## Workspace navigation
+
+Workspace screens use browser paths: `/overview`, `/organizations`,
+`/organizations/<id>`, `/organizations/new`, `/platform/users`, `/profile`,
+`/terminal`, `/inventory`, `/reports`, `/stores`, `/people`, `/settings`, and
+`/setup`. `/platform` aliases `/overview`; `/app`, `/login`, and the app-host root
+open the account's permitted default screen. A valid session skips the login form;
+an expired access cookie is refreshed before requiring sign-in. Signed-out deep
+links retain a local, role-checked `next` destination. Required password changes
+and email-link flows still take precedence over workspace entry.
+
+Deploy the included `vercel.json` with the frontend so direct visits and refreshes
+serve the application shell for workspace routes. It leaves marketing pages and
+assets available and routes `/api` requests through the dedicated proxy. Other
+static hosts need the same SPA fallback and their own API reverse proxy. Workspace
+navigation itself needs no backend environment change or database migration.
+Run the mocked browser regression checks with
+`npx playwright test --config playwright.session.config.ts navigation.spec.ts`.

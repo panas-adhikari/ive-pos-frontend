@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { ArrowLeft, LockKeyhole } from 'lucide-react'
 import SignInPage from './public/SignInPage'
+import { isWorkspacePath, navigate, usePathname } from './navigation'
 import type { Site } from './public/site'
 import { EmailFlow, FactorField, RecoveryCodes } from './identity'
 import { authRequest as request, takeEmailLink } from './identity-api'
@@ -16,6 +17,7 @@ export function useAccountActions() { return useContext(AccountActionsContext) }
 
 export function AuthBoundary({ children, site }: { children: ReactNode; site: Site }) {
   const cache = useQueryClient()
+  const path = usePathname()
   const account = useQuery({ queryKey: ['identity'], queryFn: identity, retry: false,
     networkMode: 'always' })
   const previousSession = useRef<string | null | undefined>(undefined)
@@ -53,9 +55,15 @@ export function AuthBoundary({ children, site }: { children: ReactNode; site: Si
     }
     previousSession.current = currentSession
   }, [account.data?.session_id, account.isPending, account.isError, cache])
+  useEffect(() => {
+    if (!account.isPending && !account.isError && !account.data && !link && !mode && path !== '/login') {
+      navigate(`/login${isWorkspacePath(path) && !['/', '/app'].includes(path) ? `?next=${encodeURIComponent(path)}` : ''}`, true)
+    }
+  }, [account.isPending, account.isError, account.data, link, mode, path])
   function clearSession() {
     cache.clear(); cache.setQueryData(['identity'], null)
     setShowPassword(false)
+    navigate('/login', true)
   }
 
 
@@ -92,6 +100,7 @@ export function AuthBoundary({ children, site }: { children: ReactNode; site: Si
       cache.clear()
       cache.setQueryData(['identity'], null)
       setShowPassword(false)
+      navigate('/login', true)
     } catch { setError('Sign-out could not be confirmed. Please retry.') }
     finally { setBusy(false) }
   }
@@ -128,6 +137,7 @@ export function AuthBoundary({ children, site }: { children: ReactNode; site: Si
       cache.clear()
       cache.setQueryData(['identity'], null)
       setShowPassword(false)
+      navigate('/login', true)
       setError('Password changed. Sign in again with your new password.')
     } catch { setError('Could not confirm the password change. Please try signing in again.') }
     finally { setBusy(false) }

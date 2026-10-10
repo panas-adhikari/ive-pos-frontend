@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/proxy?__ivepos_path=:path*" },
+    { "source": "/overview", "destination": "/login/index.html" },
+    { "source": "/organizations/:path*", "destination": "/login/index.html" },
+    { "source": "/platform/:path*", "destination": "/login/index.html" },
+    { "source": "/profile", "destination": "/login/index.html" },
+    { "source": "/terminal", "destination": "/login/index.html" },
+    { "source": "/reports", "destination": "/login/index.html" },
+    { "source": "/inventory", "destination": "/login/index.html" },
+    { "source": "/stores", "destination": "/login/index.html" },
+    { "source": "/people", "destination": "/login/index.html" },
+    { "source": "/settings", "destination": "/login/index.html" },
+    { "source": "/setup", "destination": "/login/index.html" }
+  ]
+}
