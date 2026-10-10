@@ -10,7 +10,10 @@ try {
   const { default: SignInPage } = await server.ssrLoadModule('/src/public/SignInPage.tsx')
   const landing = renderToStaticMarkup(React.createElement(LandingPage))
   assert.equal((landing.match(/<h1\b/g) || []).length, 1)
-  assert.match(landing, /href="\/login"/)
+  const { appLoginUrl } = await server.ssrLoadModule('/src/public/host.ts')
+  assert.ok(landing.includes(`href="${appLoginUrl}"`))
+  assert.equal(appLoginUrl, 'http://app.localhost:5173/login')
+  assert.doesNotMatch(landing, /href="\/login"/)
   assert.match(landing, /name="workspace"/)
   assert.match(landing, /\/images\/product\/ive-pos-inventory-hero.webp/)
   assert.match(landing, /href="\/features#inventory"/)
@@ -19,6 +22,8 @@ try {
   const { default: FeaturesPage } = await server.ssrLoadModule('/src/public/FeaturesPage.tsx')
   const features = renderToStaticMarkup(React.createElement(FeaturesPage))
   assert.equal((features.match(/<h1\b/g) || []).length, 1)
+  assert.ok(features.includes(`href="${appLoginUrl}"`))
+  assert.doesNotMatch(features, /href="\/login"/)
   for (const id of ['pos', 'inventory', 'multi-store', 'access', 'reporting']) assert.match(features, new RegExp(`id="${id}"`))
   const props = { busy: false, error: '', emailEnabled: true, submit() {}, recover() {}, signup() {} }
   const tenant = renderToStaticMarkup(React.createElement(SignInPage, { ...props, site: {

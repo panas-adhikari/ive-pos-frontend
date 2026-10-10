@@ -8,7 +8,7 @@ import { createServer } from 'vite'
 const template = await readFile('dist/index.html', 'utf8')
 const manifest = JSON.parse(await readFile('dist/.vite/manifest.json', 'utf8'))
 const escape = value => String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]))
-const server = await createServer({ server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' })
+const server = await createServer({ mode: 'production', server: { middlewareMode: true, hmr: false, ws: false }, appType: 'custom' })
 try {
   const { publicPages, publicSiteUrl, structuredData } = await server.ssrLoadModule('/src/public/seo.ts')
   const origin = new URL(publicSiteUrl)

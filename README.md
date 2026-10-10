@@ -73,3 +73,34 @@ VITE_API_URL=https://api.example.com npm run build
 npx playwright install chromium
 node scripts/check-hosted.mjs
 ```
+
+## Local subdomains
+
+Run `npm run dev`. Open `http://www.localhost:5173` for marketing and
+`http://app.localhost:5173/login` for sign-in. The same Vite server serves both.
+Development marketing links keep the current Vite port and use `app.localhost`;
+registered workspaces use `<slug>.localhost`. Configure the backend with
+`APP_ENV=development`, `PUBLIC_ORIGIN=http://app.localhost:5173`, and
+`TENANT_BASE_DOMAIN=localhost`. Restart the backend after changing these settings.
+Production builds use `VITE_APP_LOGIN_URL` (default `https://app.ivepos.me/login`)
+and `VITE_TENANT_BASE_DOMAIN` (default `ivepos.me`), including prerendered pages.
+
+## Vercel production settings
+
+Use build command `npm run build` and output directory `dist`. Configure:
+
+```dotenv
+VITE_APP_LOGIN_URL=https://app.ivepos.me/login
+VITE_PUBLIC_SITE_URL=https://www.ivepos.me
+VITE_TENANT_BASE_DOMAIN=ivepos.me
+VITE_API_URL=https://YOUR-RENDER-API-ORIGIN
+```
+
+Set these on the production environment and rebuild after changes. Add
+`www.ivepos.me` and `app.ivepos.me` to the matching frontend project(s); deploy the
+branch containing these changes or merge it into the configured production branch.
+Registered organization URLs additionally need wildcard domain/DNS/TLS routing
+and a same-origin `/api` proxy to the backend that preserves tenant context.
+`VITE_API_URL` is intentionally ignored on organization hosts. A wildcard frontend
+domain alone cannot provide that API routing. See the backend deployment runbook's
+"Vercel frontend and Render API" section for the required verification.
