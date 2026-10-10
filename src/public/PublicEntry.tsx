@@ -5,13 +5,15 @@ import { ProductBrand } from './Brand'
 import LandingPage from './LandingPage'
 import { isOrganizationHost, loadSite } from './site'
 import './public.css'
+import { isWorkspacePath, usePathname } from '../navigation'
+import { appLoginUrl } from './host'
 
 export default function PublicEntry({ children }: { children: ReactNode }) {
   const tenantHost = isOrganizationHost()
-  const path = window.location.pathname.replace(/\/$/, '') || '/'
+  const path = usePathname()
   const emailLink = new URLSearchParams(window.location.hash.slice(1)).has('identity')
-  if (!tenantHost && path === '/' && !emailLink) return <LandingPage />
-  if (!['/', '/login', '/app'].includes(path)) return <div className="public-site"><main className="public-container public-status"><ProductBrand /><h1>Page not found</h1><a className="public-button" href="/">Back to Ive POS</a></main></div>
+  if (!tenantHost && window.location.hostname !== new URL(appLoginUrl).hostname && path === '/' && !emailLink) return <LandingPage />
+  if (!isWorkspacePath(path)) return <div className="public-site"><main className="public-container public-status"><ProductBrand /><h1>Page not found</h1><a className="public-button" href="/">Back to Ive POS</a></main></div>
   return <BrandedAuth>{children}</BrandedAuth>
 }
 function BrandedAuth({ children }: { children: ReactNode }) {

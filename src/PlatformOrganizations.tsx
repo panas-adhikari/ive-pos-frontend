@@ -7,6 +7,7 @@ import { usePlatformStepUp } from './PlatformStepUp'
 import { DeleteOrganization, LimitEditor, OwnerCredentialsPopover } from './ControlPanels'
 import InviteOrganization from './InviteOrganization'
 import OrganizationSubdomain from './OrganizationSubdomain'
+import { navigate, usePathname } from './navigation'
 import type { OrganizationDetail, PlatformOrganization, ProvisionedOwner } from './ControlPanels'
 import './platform-organizations.css'
 
@@ -60,14 +61,16 @@ export default function PlatformOrganizations({ superAdmin }: { superAdmin: bool
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState('all')
   const [sort, setSort] = useState('name')
-  const [selected, setSelected] = useState<string | null>(null)
-  const [inviting, setInviting] = useState(false)
+  const path = usePathname()
+  const inviting = path === '/organizations/new'
+  const selected = path.startsWith('/organizations/') && !inviting ? path.slice('/organizations/'.length) : null
+  const setInviting = (value: boolean) => navigate(value ? '/organizations/new' : '/organizations')
   const [owner, setOwner] = useState<ProvisionedOwner | null>(null)
   const rows = organizations.data || []
   const visible = rows.filter(row => `${row.name} ${row.slug} ${row.location_label} ${row.organization_type}`.toLowerCase().includes(search.toLowerCase().trim()) && (filter === 'all' || filter === 'configured' && row.configured && !row.deletion_scheduled_for || filter === 'pending' && !row.configured && !row.deletion_scheduled_for || filter === 'deletion' && row.deletion_scheduled_for)).sort((a, b) => sort === 'seats' ? b.active_employees - a.active_employees || a.name.localeCompare(b.name) : a.name.localeCompare(b.name))
-  const open = (id: string) => { setSelected(id); document.querySelector('.controller-main')?.scrollTo({ top: 0 }) }
-  const back = () => { const id = selected; setSelected(null); requestAnimationFrame(() => document.getElementById(`organization-${id}`)?.focus()) }
-  if (inviting) return <InviteOrganization close={() => setInviting(false)} created={credentials => { setOwner(credentials); setInviting(false) }} />
+  const open = (id: string) => { navigate(`/organizations/${encodeURIComponent(id)}`); document.querySelector('.controller-main')?.scrollTo({ top: 0 }) }
+  const back = () => { const id = selected; navigate('/organizations'); requestAnimationFrame(() => document.getElementById(`organization-${id}`)?.focus()) }
+  if (inviting && superAdmin) return <InviteOrganization close={() => setInviting(false)} created={credentials => { setOwner(credentials); setInviting(false) }} />
   if (selected) return <OrganizationPage id={selected} superAdmin={superAdmin} back={back} />
   return <div className="platform-organizations">
     <div className="platform-page-heading"><div><span className="platform-kicker">PLATFORM / DIRECTORY</span><h1>Organizations</h1><p>Business profiles, billing, and capacity in one place.</p></div><div className="platform-heading-actions"><button className="secondary-button icon-button" disabled={organizations.isFetching} onClick={() => void organizations.refetch()}><RefreshCw size={16} aria-hidden="true" />Refresh</button>{superAdmin && <button className="primary-button icon-button" onClick={() => { setOwner(null); setInviting(true); document.querySelector('.controller-main')?.scrollTo({ top: 0 }) }}><Plus size={16} aria-hidden="true" />Add organization</button>}</div></div>
