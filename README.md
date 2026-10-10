@@ -118,6 +118,17 @@ Organization, even without a browser Origin header. A Vercel text/HTML 404 means
 the proxy function/rewrite hasn't been deployed. Run proxy regressions with
 `node tests/api-proxy.test.mjs`.
 
+## Organization administrator password recovery
+
+Platform super admins can reset an organization's administrator password from its
+detail page under Platform controls. Confirm the target email, verify your admin
+identity, and copy the generated temporary password from the result dialog.
+Existing sessions are signed out, MFA is preserved, and the administrator must
+change the temporary password at next login. The dialog also offers the existing
+email delivery option. Closing it removes the password from the screen; passwords
+are not retained in browser storage or query caches. This requires the matching
+backend password-reset endpoint and no database migration.
+
 ## Workspace navigation
 
 Workspace screens use browser paths: `/overview`, `/organizations`,
@@ -136,3 +147,7 @@ static hosts need the same SPA fallback and their own API reverse proxy. Workspa
 navigation itself needs no backend environment change or database migration.
 Run the mocked browser regression checks with
 `npx playwright test --config playwright.session.config.ts navigation.spec.ts`.
+
+### Organization settings
+
+`/settings` groups business details, contact and branding, regional defaults, and receipt defaults in one editable form. It includes live logo and sample receipt previews, the organization's dedicated or shared sign-in address, copy/open controls, a Profile & Security shortcut, store usage and employee allowances, and store capacity requests. Changes use the existing versioned settings endpoint and organization action verification. Failed saves retain edits; discard and explicit reload controls restore saved values. Unsaved edits prompt before leaving through workspace navigation or switching organizations, and before closing or reloading the browser tab. Timezone and receipt footer defaults apply to new stores; existing stores retain their settings. No database migration or additional hosting configuration is required.

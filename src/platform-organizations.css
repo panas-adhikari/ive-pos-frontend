@@ -52,3 +52,8 @@
   .controller-sidebar:has(nav[aria-label="Platform navigation"]) { flex-direction:column; }
   nav[aria-label="Platform navigation"] .workspace-link strong { overflow-wrap:anywhere; }
 }
+
+.platform-password-reset { padding:20px 0; border-bottom:1px solid var(--platform-line); margin-bottom:16px; }
+.platform-password-reset h3 { margin:0 0 8px; font-size:14px; }
+.platform-password-reset p { font-size:13px; line-height:1.65; overflow-wrap:anywhere; }
+.platform-password-confirm { margin-top:16px; padding:16px; border:1px solid var(--platform-line); border-radius:6px; background:#f7faf4; }

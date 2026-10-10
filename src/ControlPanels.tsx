@@ -185,7 +185,7 @@ function mercatorY(latitude: number, size: number) {
   return (1 - Math.log(Math.tan(radians) + 1 / Math.cos(radians)) / Math.PI) / 2 * size
 }
 
-export function OwnerCredentialsPopover({ owner, done }: { owner: ProvisionedOwner; done: () => void }) {
+export function OwnerCredentialsPopover({ owner, done, reset = false }: { owner: ProvisionedOwner; done: () => void; reset?: boolean }) {
   const runCritical = usePlatformStepUp()
   const dialog = useRef<HTMLElement>(null)
   const [copied, setCopied] = useState(false)
@@ -223,8 +223,8 @@ export function OwnerCredentialsPopover({ owner, done }: { owner: ProvisionedOwn
     catch { setError('Clipboard access failed. Select and copy the password above.') }
   }
   return <div className="step-up-backdrop credential-backdrop"><section ref={dialog} className="step-up-popover credential-popover" role="dialog" aria-modal="true" aria-labelledby="credential-title" aria-describedby="credential-description" onKeyDown={keys}>
-    <header className="credential-heading"><span className="credential-icon"><Check size={22} aria-hidden="true" /></span><div><span className="credential-eyebrow">Workspace ready</span><h2 id="credential-title" tabIndex={-1}>Organization created</h2></div><button className="credential-close" type="button" aria-label="Close confirmation" disabled={busy} onClick={done}><X size={18} aria-hidden="true" /></button></header>
-    <p id="credential-description"><strong>{owner.organization}</strong> is ready. Share the sign-in details with its administrator.</p>
+    <header className="credential-heading"><span className="credential-icon"><Check size={22} aria-hidden="true" /></span><div><span className="credential-eyebrow">{reset ? 'Administrator access' : 'Workspace ready'}</span><h2 id="credential-title" tabIndex={-1}>{reset ? 'Temporary password ready' : 'Organization created'}</h2></div><button className="credential-close" type="button" aria-label="Close confirmation" disabled={busy} onClick={done}><X size={18} aria-hidden="true" /></button></header>
+    <p id="credential-description">{reset ? <>The administrator password for <strong>{owner.organization}</strong> has been reset. Existing sessions were signed out; MFA stays enabled if configured. Copy this password before closing.</> : <><strong>{owner.organization}</strong> is ready. Share the sign-in details with its administrator.</>}</p>
     <dl className="credential-account"><div><dt>Workspace sign-in</dt><dd><a href={owner.login_url} target="_blank" rel="noreferrer">{owner.login_url}<ArrowUpRight size={14} aria-hidden="true" /></a></dd></div><div><dt>Administrator email</dt><dd>{owner.email}</dd></div></dl>
     <div className="credential-password"><div className="credential-password-heading"><span>Temporary password</span><button type="button" className="credential-copy" onClick={() => void copyPassword()}>{copied ? <Check size={14} aria-hidden="true" /> : <Copy size={14} aria-hidden="true" />}{copied ? 'Copied' : 'Copy password'}</button></div><code>{owner.temporaryPassword}</code><small>The administrator must choose a new password at first sign-in.</small><span className="sr-only" role="status">{copied ? 'Password copied to clipboard.' : ''}</span></div>
     {sent ? <div className="credential-delivery is-sent" role="status"><Check size={17} aria-hidden="true" /><div><strong>Email queued</strong><span>The administrator’s sign-in details are queued for delivery.</span></div></div> : <div className="credential-delivery"><Mail size={17} aria-hidden="true" /><div><strong>Send the sign-in details</strong><span>Email the workspace link and temporary password to the administrator.</span></div></div>}
