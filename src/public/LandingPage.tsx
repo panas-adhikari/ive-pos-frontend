@@ -1,3 +1,4 @@
+import { appLoginUrl } from './host'
 import { ArrowDown, ArrowRight, ArrowUpRight, Check, Menu, ScanLine, ShieldCheck, Store } from 'lucide-react'
 import { motion, MotionConfig, useMotionValue, useReducedMotion, useScroll, useSpring, useTransform } from 'framer-motion'
 import type { PointerEvent, ReactNode } from 'react'
@@ -43,16 +44,16 @@ export function MarketingHeader({ features = false }: { features?: boolean }) {
   return <header className="marketing-header"><div className="marketing-container marketing-header-inner">
     <ProductBrand />
     <nav className="marketing-desktop-nav" aria-label="Main navigation"><a href={`${home}#product`}>The product</a><a href={`${home}#stores`}>Your stores</a><a href={`${home}#access`}>Security</a><a href="/features" aria-current={features ? 'page' : undefined}>All features</a></nav>
-    <a className="marketing-signin" href="/login">Sign in <ArrowUpRight size={16} aria-hidden="true" /></a>
+    <a className="marketing-signin" href={appLoginUrl}>Sign in <ArrowUpRight size={16} aria-hidden="true" /></a>
     <details className="marketing-mobile-menu" ref={menu} onKeyDown={event => { if (event.key === 'Escape') { close(); menu.current?.querySelector('summary')?.focus() } }}>
       <summary aria-label="Navigation menu"><Menu size={22} aria-hidden="true" /></summary>
-      <nav aria-label="Mobile navigation" onClick={close}><a href={`${home}#product`}>The product</a><a href={`${home}#stores`}>Your stores</a><a href={`${home}#access`}>Security</a><a href="/features">All features</a><a href="/login">Open Ive POS <ArrowUpRight size={17} aria-hidden="true" /></a></nav>
+      <nav aria-label="Mobile navigation" onClick={close}><a href={`${home}#product`}>The product</a><a href={`${home}#stores`}>Your stores</a><a href={`${home}#access`}>Security</a><a href="/features">All features</a><a href={appLoginUrl}>Open Ive POS <ArrowUpRight size={17} aria-hidden="true" /></a></nav>
     </details>
   </div></header>
 }
 
 export function MarketingFooter() {
-  return <footer className="marketing-footer marketing-container"><div><ProductBrand /><span className="footer-tagline">Retail operations. In clear view.</span></div><nav aria-label="Footer navigation"><a href="/features">Product features</a><a href="/login">Sign in</a><a href="/#start">Find your workspace</a></nav><span>© {new Date().getFullYear()} Ive POS</span></footer>
+  return <footer className="marketing-footer marketing-container"><div><ProductBrand /><span className="footer-tagline">Retail operations. In clear view.</span></div><nav aria-label="Footer navigation"><a href="/features">Product features</a><a href={appLoginUrl}>Sign in</a><a href="/#start">Find your workspace</a></nav><span>© {new Date().getFullYear()} Ive POS</span></footer>
 }
 
 export function ProductShot({ name, alt, caption, className = '', mobile = true, hero = false }: {
@@ -101,7 +102,7 @@ export default function LandingPage() {
     <main id="content">
       <section className="marketing-hero marketing-container" id="product" aria-labelledby="landing-title">
         <div className="hero-identity"><span><i aria-hidden="true" /> RETAIL SOFTWARE / NEPAL</span><span>From your first sale to your next store.</span></div>
-        <div className="hero-composition"><Reveal><h1 id="landing-title" className="marketing-display">Ive POS.<br /><span>Retail, in clear view.</span></h1></Reveal><Reveal className="hero-introduction" delay={0.1}><p>Sales at the counter. Stock on the shelves. People in your stores. One workspace to keep it all in view.</p><div className="marketing-actions"><a className="marketing-button" href="/login">Open Ive POS <ArrowUpRight size={18} aria-hidden="true" /></a><a className="marketing-link" href="#pos">Take a look <ArrowDown size={17} aria-hidden="true" /></a></div></Reveal></div>
+        <div className="hero-composition"><Reveal><h1 id="landing-title" className="marketing-display">Ive POS.<br /><span>Retail, in clear view.</span></h1></Reveal><Reveal className="hero-introduction" delay={0.1}><p>Sales at the counter. Stock on the shelves. People in your stores. One workspace to keep it all in view.</p><div className="marketing-actions"><a className="marketing-button" href={appLoginUrl}>Open Ive POS <ArrowUpRight size={18} aria-hidden="true" /></a><a className="marketing-link" href="#pos">Take a look <ArrowDown size={17} aria-hidden="true" /></a></div></Reveal></div>
         <div className="hero-product-stage">
           <div className="hero-stage-line" aria-hidden="true" /><div className="hero-back-screen" aria-hidden="true"><img src="/images/product/ive-pos-terminal.webp" width="2160" height="1800" alt="" decoding="async" /></div>
           <ProductShot name="inventory" hero mobile={false} alt="Full Ive POS workspace showing the navigation, six stock items, and their quantities at Mountain Mart" caption="Inside your retail workspace" />
@@ -117,7 +118,7 @@ export default function LandingPage() {
         <div className="scene-product-stage"><ProductShot name={scene.name} className={`showroom-${scene.name}`} alt={scene.alt} caption={scene.caption} /></div>
       </div></section>)}
       <section className="marketing-start" id="start" aria-labelledby="start-title"><div className="marketing-container start-composition">
-        <div><div className="chapter-label">YOUR NEXT WORKING DAY</div><h2 id="start-title">Open your store.<br />We’ll guide the setup.</h2><p className="start-description">Secure your account, confirm your business details, and add your first store and register in Quick setup.</p><div className="setup-path"><span><Check size={14} aria-hidden="true" />Secure account</span><ArrowRight size={14} aria-hidden="true" /><span>Store</span><ArrowRight size={14} aria-hidden="true" /><span>Register</span></div><a className="marketing-button" href="/login">Sign in or create an account <ArrowUpRight size={18} aria-hidden="true" /></a><span className="availability-note">Nepal IRD integration · Planned</span></div><div className="workspace-entry"><span className="workspace-entry-label">ALREADY HAVE A STORE?</span><h3>Find your workspace.</h3><WorkspaceFinder /></div>
+        <div><div className="chapter-label">YOUR NEXT WORKING DAY</div><h2 id="start-title">Open your store.<br />We’ll guide the setup.</h2><p className="start-description">Secure your account, confirm your business details, and add your first store and register in Quick setup.</p><div className="setup-path"><span><Check size={14} aria-hidden="true" />Secure account</span><ArrowRight size={14} aria-hidden="true" /><span>Store</span><ArrowRight size={14} aria-hidden="true" /><span>Register</span></div><a className="marketing-button" href={appLoginUrl}>Sign in or create an account <ArrowUpRight size={18} aria-hidden="true" /></a><span className="availability-note">Nepal IRD integration · Planned</span></div><div className="workspace-entry"><span className="workspace-entry-label">ALREADY HAVE A STORE?</span><h3>Find your workspace.</h3><WorkspaceFinder /></div>
       </div></section>
     </main><MarketingFooter />
   </div></MotionConfig>

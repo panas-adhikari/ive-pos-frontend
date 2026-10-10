@@ -81,5 +81,5 @@ export default defineConfig(({ mode, command }) => {
       throw new Error('Hosted builds require an HTTPS API origin')
     }
   }
-  return { base: '/', define: { 'import.meta.env.VITE_PUBLIC_SITE_URL': JSON.stringify(publicOrigin) }, build: { manifest: true }, plugins: [react(), tailwindcss(), apiProxy()] }
+  return { server: { host: '127.0.0.1', port: 5173, strictPort: true }, base: '/', define: { 'import.meta.env.VITE_PUBLIC_SITE_URL': JSON.stringify(publicOrigin) }, build: { manifest: true }, plugins: [react(), tailwindcss(), apiProxy()] }
 })

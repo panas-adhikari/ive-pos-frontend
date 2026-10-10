@@ -1,4 +1,12 @@
-export const tenantBaseDomain = (import.meta.env.VITE_TENANT_BASE_DOMAIN || 'ivepos.me').toLowerCase()
+const localDevelopment = import.meta.env.MODE === 'development'
+const localPort = typeof window === 'undefined' ? '5173' : window.location.port
+// Local marketing and authentication use sibling hosts, just like production.
+export const appLoginUrl = localDevelopment
+  ? `http://app.localhost${localPort ? `:${localPort}` : ''}/login`
+  : import.meta.env.VITE_APP_LOGIN_URL || 'https://app.ivepos.me/login'
+export const tenantBaseDomain = localDevelopment
+  ? 'localhost'
+  : (import.meta.env.VITE_TENANT_BASE_DOMAIN || 'ivepos.me').toLowerCase()
 const reserved = new Set(['www', 'app', 'api', 'admin', 'platform', 'auth', 'login', 'signup', 'mail', 'smtp', 'support', 'status', 'static', 'assets', 'cdn', 'docs', 'help', 'billing'])
 export function isOrganizationHost(host = window.location.hostname) {
   if (!host.endsWith(`.${tenantBaseDomain}`)) return false
