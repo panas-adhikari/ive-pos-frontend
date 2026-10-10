@@ -1,0 +1,20 @@
+.organization-subdomain .platform-status { gap:6px; }
+.organization-login-address { display:grid; gap:8px; padding:16px; background:#f7faf4; border:1px solid var(--platform-line); border-radius:6px; margin-bottom:20px; }
+.organization-login-address>a { display:flex; align-items:center; gap:8px; color:#336b4b; font-size:13px; overflow-wrap:anywhere; word-break:break-word; }
+.organization-login-address svg { flex:none; }
+.organization-login-address .platform-text-button { justify-self:start; }
+.organization-subdomain fieldset { border:0; padding:0; margin:0; min-width:0; }
+.subdomain-toggle { display:flex; align-items:center; gap:10px; font-size:13px; font-weight:600; }
+.controller-shell .subdomain-toggle input { width:18px; min-height:18px; height:18px; flex:none; }
+.subdomain-help { font-size:12px; color:var(--platform-muted); line-height:1.65; margin:10px 0 16px; }
+.subdomain-input-label { display:block; font-size:12px; margin:16px 0 7px; }
+.subdomain-input { display:flex; align-items:center; border:1px solid var(--platform-line); border-radius:6px; background:#fff; overflow:hidden; }
+.controller-shell .subdomain-input input { flex:1; width:0; min-width:0; border:0; border-radius:0; background:transparent; }
+.subdomain-input span { padding:10px 12px 10px 0; font-size:12px; color:var(--platform-muted); overflow-wrap:anywhere; }
+.subdomain-input:focus-within { outline:2px solid #336b4b; outline-offset:2px; }
+.subdomain-suggestions { display:flex; flex-wrap:wrap; gap:8px; }
+.subdomain-suggestions button { padding:7px 11px; min-height:36px; border:1px solid var(--platform-line); border-radius:5px; background:#fff; color:var(--platform-ink); font-size:12px; }
+.subdomain-suggestions button[aria-pressed=true] { border-color:#336b4b; background:#eef6eb; color:#2e6b45; }
+.subdomain-suggestions button:disabled { color:var(--platform-muted); background:#f5f6f3; }
+.organization-subdomain :focus-visible { outline:2px solid #336b4b; outline-offset:3px; }
+@media (max-width:600px) { .organization-login-address { padding:12px; }.organization-login-address>a { font-size:12px; }.subdomain-input span { font-size:11px; padding-right:10px; } }
